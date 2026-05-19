@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout App Simulator with Auth</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #EBF0F5;
+        }
+        /* Custom scrollbar for simulator */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen py-8 px-4">
+
+    <!-- Mobile Device Frame Container -->
+    <div class="relative w-full max-w-[410px] h-[840px] bg-[#1A1F36] rounded-[48px] p-3 shadow-2xl border-4 border-[#333A52] flex flex-col overflow-hidden">
+        
+        <!-- Speaker / Camera Notch Mockup -->
+        <div class="absolute top-4 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-[#1A1F36] rounded-b-2xl z-30 flex items-center justify-center gap-2">
+            <div class="w-12 h-1 bg-[#333A52] rounded-full"></div>
+            <div class="w-2.5 h-2.5 bg-[#252A3C] rounded-full"></div>
+        </div>
+
+        <!-- Phone Screen Container -->
+        <div class="w-full h-full bg-[#F8F9FC] rounded-[38px] overflow-hidden flex flex-col relative pt-4">
+            
+            <!-- Mobile Header / Status Bar -->
+            <div class="flex justify-between items-center px-6 pt-3 pb-2 text-xs font-semibold text-[#1A1F36] select-none z-20">
+                <span id="currentTime">9:26 AM</span>
+                <!-- Status Icons -->
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[10px] text-[#6B7280]" id="currentDate">Tue May 19</span>
+                    <!-- Cellular Signal SVG -->
+                    <svg class="w-4 h-4 fill-current text-[#1A1F36]" viewBox="0 0 24 24">
+                        <path d="M12 3c-1.2 0-2.4.4-3.4 1.2L2.3 9.4c-1 .8-1 2.4 0 3.2L12 21l9.7-8.4c1-.8 1-2.4 0-3.2L15.4 4.2c-1-.8-2.2-1.2-3.4-1.2zM12 18.2L4.5 11.7 12 5.2l7.5 6.5-7.5 6.5z"/>
+                    </svg>
+                    <!-- Battery SVG -->
+                    <svg class="w-5 h-5 fill-current text-[#1A1F36]" viewBox="0 0 24 24">
+                        <path d="M17 5H3a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2zm0 12H3V7h14v10zm4-8v6a2 2 0 002-2V11a2 2 0 00-2-2z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Custom Notification Toast Container -->
+            <div id="toast" class="absolute top-16 left-6 right-6 bg-red-500 text-white text-xs rounded-xl py-3 px-4 shadow-lg flex items-center gap-2 transform -translate-y-20 opacity-0 transition-all duration-300 z-50">
+                <span id="toastMessage" class="flex-1 font-semibold">Error Message</span>
+                <button onclick="hideToast()" class="font-bold hover:opacity-80">✕</button>
+            </div>
+
+            <!-- SCREEN 1: Welcome/Auth Selection Screen -->
+            <div id="welcomeScreen" class="absolute inset-0 bg-white flex flex-col justify-between p-8 z-10 transition-transform duration-300 pt-12">
+                <div class="flex flex-col items-center text-center mt-12">
+                    <div class="w-16 h-16 bg-[#EFF6FF] text-[#3B82F6] rounded-2xl flex items-center justify-center shadow-md mb-6">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-3xl font-extrabold text-[#1A1F36] tracking-tight">TrackFit</h2>
+                    <p class="text-sm text-[#6B7280] mt-2 max-w-[240px]">The clean, simple training companion for reaching your fitness milestones.</p>
+                </div>
+
+                <div class="space-y-3 mb-8">
+                    <button onclick="navigateTo('signUpScreen')" class="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold py-3.5 rounded-xl transition shadow-sm text-sm">
+                        Create Account
+                    </button>
+                    <button onclick="navigateTo('logInScreen')" class="w-full bg-slate-50 hover:bg-slate-100 text-[#1A1F36] border border-[#E5E7EB] font-bold py-3.5 rounded-xl transition text-sm">
+                        Sign In
+                    </button>
+                    <p class="text-[11px] text-[#9CA3AF] text-center mt-4">By continuing, you agree to keep your community safe, clean, and helpful.</p>
+                </div>
+            </div>
+
+            <!-- SCREEN 2: Sign Up Screen -->
+            <div id="signUpScreen" class="absolute inset-0 bg-white flex flex-col p-6 z-10 hidden transition-all duration-300 pt-10 overflow-y-auto no-scrollbar">
+                <!-- Back Arrow Button -->
+                <button onclick="navigateTo('welcomeScreen')" class="w-8 h-8 flex items-center justify-center rounded-lg border border-[#E5E7EB] text-[#1A1F36] hover:bg-slate-50 mb-4 flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+
+                <div class="mb-4">
+                    <h2 class="text-2xl font-bold text-[#1A1F36]">Get Started</h2>
+                    <p class="text-xs text-[#6B7280] mt-1">Create a free account to track your daily progress.</p>
+                </div>
+
+                <form id="signUpForm" onsubmit="handleSignUp(event)" class="space-y-3">
+                    <!-- First & Last Name Fields -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-[#1A1F36] mb-1">First Name</label>
+                            <input type="text" id="firstNameInput" placeholder="John" required
+                                   class="w-full bg-slate-50 border border-[#E5E7EB] text-sm text-[#1A1F36] rounded-xl p-3 focus:outline-none focus:border-[#3B82F6] transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-[#1A1F36] mb-1">Last Name</label>
+                            <input type="text" id="lastNameInput" placeholder="Doe" required
+                                   class="w-full bg-slate-50 border border-[#E5E7EB] text-sm text-[#1A1F36] rounded-xl p-3 focus:outline-none focus:border-[#3B82F6] transition-colors">
+                        </div>
+                    </div>
+
+                    <!-- Suggested Username Field -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-semibold text-[#1A1F36]">Username</label>
+                            <span id="usernameTip" class="text-[10px] text-blue-500 font-medium italic">Example: @JohnDoe</span>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute left-3 top-3 text-sm text-[#9CA3AF]">@</span>
+                            <input type="text" id="usernameInput" placeholder="JohnDoe" required
+                                   class="w-full bg-slate-50 border border-[#E5E7EB] text-sm text-[#1A1F36] rounded-xl p-3 pl-7 focus:outline-none focus:border-[#3B82F6] transition-colors">
+                        </div>
+                        <span id="usernameValidationMessage" class="text-[10px] text-red-500 hidden mt-1 font-medium">Please do not use inappropriate language.</span>
+                    </div>
+
+                    <!-- Email Field -->
+                    <div>
+                        <label class="block text-xs font-semibold text-[#1A1F36] mb-1">Email Address</label>
+                        <input type="email" id="signUpEmail" placeholder="you@example.com" required
+                               class="w-full bg-slate-50 border border-[#E5E7EB] text-sm text-[#1A1F36] rounded-xl p-3 focus:outline-none focus:border-[#3B82F6] transition-colors">
+                    </div>
+
+                    <!-- Password Field -->
+                    <div>
+                        <label class="block text-xs font-semibold text-[#1A1F36] mb-1">Create Password</label>
+                        <input type="password" id="signUpPassword" placeholder="Minimum 6 characters" required minlength="6"
+                               class="w-full bg-slate-50 border border-[#E5E7EB] text-sm text-[#1A1F36] rounded-xl p-3 focus:outline-none focus:border-[#3B82F6] transition-colors">
+                    </div>
+
+                    <button type="submit" class="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold py-3 rounded-xl transition text-sm shadow-sm mt-4">
+                        Register Account
+                    </button>
+                </form>
+
+                <p class="text-xs text-center text-[#6B7280] mt-4">
+                    Already have an account? <span onclick="navigateTo('logInScreen')" class="text-blue-500 font-bold cursor-pointer hover:underline">Sign In</span>
+                </p>
+            </div>
+
+            <!-- SCREEN 3: Log In Screen -->
+            <div id="logInScreen" class="absolute inset-0 bg-white flex flex-col p-6 z-10 hidden transition-all duration-300 pt-10">
+                <!-- Back Arrow Button -->
+                <button onclick="navigateTo('welcomeScreen')" class="w-8 h-8 flex items-center justify-center rounded-lg border border-[#E5E7EB] text-[#1A1F36] hover:bg-slate-50 mb-6 flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-[#1A1F36]">Welcome Back</h2>
+                    <p class="text-xs text-[#6B7280] mt-1">Enter your account details below to sync your progress.</p>
+                </div>
+
+                <form id="logInForm" onsubmit="handleLogIn(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-[#1A1F36] mb-1">Email Address</label>
+                        <input type="email" id="logInEmail" placeholder="you@example.com" required
+                               class="w-full bg-slate-50 border border-[#E5E7EB] text-sm text-[#1A1F36] rounded-xl p-3 focus:outline-none focus:border-[#3B82F6] transition-colors">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-[#1A1F36] mb-1">Password</label>
+                        <input type="password" id="logInPassword" placeholder="••••••••" required
+                               class="w-full bg-slate-50 border border-[#E5E7EB] text-sm text-[#1A1F36] rounded-xl p-3 focus:outline-none focus:border-[#3B82F6] transition-colors">
+                    </div>
+
+                    <button type="submit" class="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold py-3 rounded-xl transition text-sm shadow-sm mt-2">
+                        Sign In
+                    </button>
+                </form>
+
+                <p class="text-xs text-center text-[#6B7280] mt-6">
+                    New to TrackFit? <span onclick="navigateTo('signUpScreen')" class="text-blue-500 font-bold cursor-pointer hover:underline">Create an account</span>
+                </p>
+            </div>
+
+            <!-- SCREEN 4: Main Workout Screen (Protected Area) -->
+            <div id="mainDashboard" class="flex flex-col flex-1 hidden overflow-hidden">
+                <!-- App Bar Header with Log Out -->
+                <div class="px-6 py-2 flex justify-between items-center select-none">
+                    <div>
+                        <h1 class="text-2xl font-extrabold text-[#1A1F36] tracking-tight" id="userDisplayName">User Profile</h1>
+                        <p class="text-xs text-[#6B7280] font-medium mt-0.5" id="userDisplayHandle">@username</p>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <!-- Done Tracker Counter -->
+                        <div class="bg-[#EFF6FF] text-[#1E40AF] px-3 py-1.5 rounded-full text-xs font-bold shadow-sm">
+                            <span id="completedCounter">0</span>/6 Done
+                        </div>
+                        <!-- Log Out Action Button -->
+                        <button onclick="handleLogOut()" class="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors" title="Log Out">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dynamic Search / Filter Bar -->
+                <div class="px-6 py-2">
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Search exercises or muscles..." 
+                               class="w-full bg-white border border-[#E5E7EB] text-[#1A1F36] placeholder-[#6B7280] text-sm rounded-xl py-2.5 pl-10 pr-4 focus:outline-none focus:border-[#3B82F6] transition-all shadow-sm">
+                        <div class="absolute left-3.5 top-3.5 text-[#6B7280]">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scrollable Exercise List -->
+                <div id="exerciseContainer" class="flex-1 overflow-y-auto px-6 pb-20 pt-2 space-y-5 no-scrollbar">
+                    <!-- Exercises dynamically injected here -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Phone Home Indicator Bar -->
+        <div class="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-[#333A52] rounded-full z-30"></div>
+    </div>
+
+    <!-- Firebase SDK Imports for Production Data Syncing -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ============================================================================
+        // FIREBASE CONFIGURATION
+        // ============================================================================
+        // To launch on GitHub Pages & publish: Replace with your actual Firebase config keys here!
+        const firebaseConfig = {
+            apiKey: "",
+            authDomain: "your-project-id.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project-id.appspot.com",
+            messagingSenderId: "your-sender-id",
+            appId: "your-app-id"
+        };
+
+        // Check if runtime environment provides a default config
+        let app, auth, db;
+        try {
+            if (typeof __firebase_config !== 'undefined') {
+                app = initializeApp(JSON.parse(__firebase_config));
+            } else {
+                app = initializeApp(firebaseConfig);
+            }
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch(e) {
+            console.warn("Firebase not fully configured yet. Running in Local Sandbox Simulated Storage Mode.");
+        }
+
+        // ============================================================================
+        // BLACKLIST WORD FILTER (Safe, Clean & High Standards)
+        // ============================================================================
+        const BLACKLIST = [
+            'badword1', 'hate', 'spam', 'admin', 'system', 'jerk', 'loser', 
+            'fool', 'stupid', 'dummy', 'ugly', 'trash', 'scam', 'fake'
+        ];
+
+        function isClean(username) {
+            const cleanText = username.toLowerCase().replace(/[^a-z0-9]/g, '');
+            for (let word of BLACKLIST) {
+                if (cleanText.includes(word)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // ============================================================================
+        // EXERCISE DATABASE
+        // ============================================================================
+        const EXERCISES = [
+            {
+                'id': 'leg_press',
+                'name': 'Leg Press',
+                'sets': 3,
+                'reps': 10,
+                'type': 'Strength',
+                'level': 'All Levels',
+                'benefits': 'Builds lower body strength and muscle mass.',
+                'targets': ['Quadriceps', 'Glutes', 'Hamstrings'],
+                'key_details': [
+                    'Push through your heels, not your toes.',
+                    'Keep your back flat against the pad.',
+                    'Do not lock out your knees at the top.',
+                    'Lower the weight under control.'
+                ],
+                'breathing': [
+                    'Inhale as you lower the weight.',
+                    'Exhale as you push the weight up.'
+                ],
+                'setup': [
+                    'Seat Position: Adjust so knees form a 90-degree angle when the platform is midway.',
+                    'Foot Placement: Shoulder-width apart, slightly below the center of the platform.',
+                    'Back Pad: Adjust to support the natural curve of your lower back.'
+                ],
+                'coaching_tips': [
+                    'Control the movement throughout the entire range.',
+                    'Focus on depth and muscle engagement.',
+                    'Avoid bouncing or using momentum.'
+                ],
+                'common_mistakes': [
+                    'Allowing knees to cave inward.',
+                    'Lifting hips off the seat.',
+                    'Using too much weight and sacrificing form.'
+                ]
+            },
+            {
+                'id': 'db_row',
+                'name': 'DB Row',
+                'sets': 3,
+                'reps': 10,
+                'type': 'Strength',
+                'level': 'Intermediate',
+                'benefits': 'Builds back thickness and improves posture.',
+                'targets': ['Latissimus Dorsi', 'Rhomboids', 'Biceps'],
+                'key_details': [
+                    'Keep your back flat, not rounded.',
+                    'Pull the dumbbell toward your hip.',
+                    'Squeeze your shoulder blade at the top.'
+                ],
+                'breathing': [
+                    'Exhale as you pull the weight up.',
+                    'Inhale as you lower the weight.'
+                ],
+                'setup': [
+                    'Place one knee and hand on a bench.',
+                    'Keep your back parallel to the floor.',
+                    'Let the dumbbell hang straight down.'
+                ],
+                'coaching_tips': [
+                    'Lead with your elbow, not your bicep.',
+                    'Control the descent of the weight.'
+                ],
+                'common_mistakes': [
+                    'Using momentum to swing the weight.',
+                    'Rounding the lower back.',
+                    'Pulling too high toward the chest.'
+                ]
+            },
+            {
+                'id': 'bicep_curl',
+                'name': 'Bicep Curl',
+                'sets': 3,
+                'reps': 10,
+                'type': 'Strength',
+                'level': 'Beginner',
+                'benefits': 'Builds arm strength and bicep definition.',
+                'targets': ['Biceps Brachii', 'Brachialis'],
+                'key_details': [
+                    'Keep your elbows pinned to your sides.',
+                    "Don't swing your back."
+                ],
+                'breathing': [
+                    'Exhale as you curl up.',
+                    'Inhale as you lower.'
+                ],
+                'setup': [
+                    'Hold dumbbells at your sides with palms facing forward.',
+                    'Stand with feet shoulder-width apart.'
+                ],
+                'coaching_tips': [
+                    'Squeeze the biceps at the top of the movement.'
+                ],
+                'common_mistakes': [
+                    'Using momentum from the lower body.',
+                    'Moving the elbows forward.'
+                ]
+            },
+            {
+                'id': 'squats',
+                'name': 'Squats',
+                'sets': 3,
+                'reps': 10,
+                'type': 'Strength',
+                'level': 'All Levels',
+                'benefits': 'Builds total lower body strength and core stability.',
+                'targets': ['Quadriceps', 'Glutes', 'Hamstrings', 'Core'],
+                'key_details': [
+                    'Keep your chest up and back flat.',
+                    'Lower until thighs are parallel to floor.',
+                    'Knees track over toes.'
+                ],
+                'breathing': [
+                    'Inhale as you lower into the squat.',
+                    'Exhale as you drive up.'
+                ],
+                'setup': [
+                    'Stand with feet shoulder-width apart.',
+                    'Hold bar across upper back (if using weight).'
+                ],
+                'coaching_tips': [
+                    'Break at the hips and knees simultaneously.',
+                    'Keep weight in your heels.'
+                ],
+                'common_mistakes': [
+                    'Knees caving inward.',
+                    'Rounded lower back.',
+                    'Not reaching depth.'
+                ]
+            },
+            {
+                'id': 'chest_press',
+                'name': 'Chest Press',
+                'sets': 3,
+                'reps': 10,
+                'type': 'Strength',
+                'level': 'All Levels',
+                'benefits': 'Builds chest, shoulder, and triceps strength.',
+                'targets': ['Pectoralis Major', 'Anterior Deltoid', 'Triceps'],
+                'key_details': [
+                    'Keep your shoulders pinned back.',
+                    'Lower the bar to your mid-chest.'
+                ],
+                'breathing': [
+                    'Inhale as you lower the bar.',
+                    'Exhale as you press up.'
+                ],
+                'setup': [
+                    'Lie flat on bench with feet planted.',
+                    'Grip bar slightly wider than shoulder-width.'
+                ],
+                'coaching_tips': [
+                    'Touch the bar to your chest lightly.',
+                    'Drive through your feet for leg drive.'
+                ],
+                'common_mistakes': [
+                    'Flaring elbows too wide.',
+                    'Bouncing bar off chest.'
+                ]
+            },
+            {
+                'id': 'tricep_rope_pushdown',
+                'name': 'Tricep Rope Pushdown',
+                'sets': 3,
+                'reps': 10,
+                'type': 'Strength',
+                'level': 'Intermediate',
+                'benefits': 'Builds triceps strength and arm definition.',
+                'targets': ['Triceps Brachii'],
+                'key_details': [
+                    'Keep elbows tucked at your sides.',
+                    "Don't let elbows drift forward."
+                ],
+                'breathing': [
+                    'Exhale as you push down.',
+                    'Inhale as you return.'
+                ],
+                'setup': [
+                    'Attach rope to high pulley.',
+                    'Stand facing cable machine.'
+                ],
+                'coaching_tips': [
+                    'Lock elbows at the bottom for full contraction.',
+                    'Slow controlled negative.'
+                ],
+                'common_mistakes': [
+                    'Using shoulder to push.',
+                    'Leaning forward excessively.'
+                ]
+            }
+        ];
+
+        // Core App State Variables
+        let currentUser = null;
+        let completionState = {};
+
+        // In-memory local user fallback database for preview without Firebase configuration
+        const localMockUsers = {};
+
+        // ============================================================================
+        // SCREEN NAVIGATION & DISPLAY TIMINGS
+        // ============================================================================
+        function updateTime() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            document.getElementById('currentTime').innerText = `${hours}:${minutes} ${ampm}`;
+
+            const options = { weekday: 'short', month: 'short', day: 'numeric' };
+            document.getElementById('currentDate').innerText = now.toLocaleDateString('en-US', options);
+        }
+        setInterval(updateTime, 60000);
+        updateTime();
+
+        // Screen routing function
+        function navigateTo(screenId) {
+            const screens = ['welcomeScreen', 'signUpScreen', 'logInScreen', 'mainDashboard'];
+            screens.forEach(s => {
+                document.getElementById(s).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+        window.navigateTo = navigateTo; // Expose to HTML clicks
+
+        // Error & Toast Alert Notification Utility
+        function showToast(message, isSuccess = false) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.innerText = message;
+            if (isSuccess) {
+                toast.classList.remove('bg-red-500');
+                toast.classList.add('bg-green-500');
+            } else {
+                toast.classList.remove('bg-green-500');
+                toast.classList.add('bg-red-500');
+            }
+            
+            toast.classList.remove('-translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                hideToast();
+            }, 4000);
+        }
+        window.hideToast = function() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('-translate-y-20', 'opacity-0');
+            toast.classList.remove('translate-y-0', 'opacity-100');
+        }
+
+        // ============================================================================
+        // REAL-TIME USERNAME GENERATION & SANITIZATION
+        // ============================================================================
+        const firstNameInput = document.getElementById('firstNameInput');
+        const lastNameInput = document.getElementById('lastNameInput');
+        const usernameInput = document.getElementById('usernameInput');
+        const validationMessage = document.getElementById('usernameValidationMessage');
+
+        function generateSuggestedUsername() {
+            const firstClean = firstNameInput.value.trim().replace(/[^a-zA-Z0-9]/g, '');
+            const lastClean = lastNameInput.value.trim().replace(/[^a-zA-Z0-9]/g, '');
+            
+            if (firstClean || lastClean) {
+                // Formatting into @FirstNameLastName format
+                const suggestion = `${firstClean}${lastClean}`;
+                usernameInput.value = suggestion;
+                validateUsername(suggestion);
+            }
+        }
+
+        function validateUsername(val) {
+            if (!isClean(val)) {
+                validationMessage.classList.remove('hidden');
+                usernameInput.classList.add('border-red-400', 'bg-red-50');
+                return false;
+            } else {
+                validationMessage.classList.add('hidden');
+                usernameInput.classList.remove('border-red-400', 'bg-red-50');
+                return true;
+            }
+        }
+
+        firstNameInput.addEventListener('input', generateSuggestedUsername);
+        lastNameInput.addEventListener('input', generateSuggestedUsername);
+        usernameInput.addEventListener('input', (e) => {
+            validateUsername(e.target.value);
+        });
+
+        // ============================================================================
+        // USER AUTHENTICATION CONTROLLER
+        // ============================================================================
+
+        // Initialize user tracking
+        if (auth) {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    document.getElementById('userDisplayName').innerText = user.displayName || "TrackFit Athlete";
+                    document.getElementById('userDisplayHandle').innerText = `@${user.email.split('@')[0]}`;
+                    
+                    // Fetch completed workouts from Firestore
+                    await loadProgress(user.uid);
+                    navigateTo('mainDashboard');
+                } else {
+                    currentUser = null;
+                    navigateTo('welcomeScreen');
+                }
+            });
+        }
+
+        // SIGN UP PROCESS
+        window.handleSignUp = async function(event) {
+            event.preventDefault();
+            const first = firstNameInput.value.trim();
+            const last = lastNameInput.value.trim();
+            const username = usernameInput.value.trim();
+            const email = document.getElementById('signUpEmail').value.trim();
+            const password = document.getElementById('signUpPassword').value.trim();
+
+            if (!validateUsername(username)) {
+                showToast("Please choose a clean and friendly username.");
+                return;
+            }
+
+            try {
+                if (auth && db && firebaseConfig.apiKey !== "") {
+                    // Firebase Production Action
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+                    
+                    // Save user record inside Auth profile
+                    await updateProfile(user, { displayName: `${first} ${last}` });
+                    
+                    // Create Firestore metadata record (Strict path Rule 1)
+                    await setDoc(doc(db, "artifacts", "workout-app", "users", user.uid, "profile"), {
+                        firstName: first,
+                        lastName: last,
+                        username: username,
+                        email: email,
+                        createdAt: new Date().toISOString()
+                    });
+
+                    showToast("Account created successfully!", true);
+                } else {
+                    // Fallback Sandbox simulation
+                    const mockUid = "user_" + Math.random().toString(36).substr(2, 9);
+                    localMockUsers[mockUid] = {
+                        uid: mockUid,
+                        displayName: `${first} ${last}`,
+                        username: username,
+                        email: email,
+                        progress: {}
+                    };
+                    currentUser = localMockUsers[mockUid];
+                    
+                    document.getElementById('userDisplayName').innerText = currentUser.displayName;
+                    document.getElementById('userDisplayHandle').innerText = `@${username}`;
+                    
+                    // Reset simulator progress
+                    completionState = {};
+                    renderExercises();
+                    updateCounter();
+                    
+                    showToast("Account registered! (Local Offline Mode)", true);
+                    navigateTo('mainDashboard');
+                }
+            } catch (error) {
+                showToast(error.message);
+            }
+        };
+
+        // LOG IN PROCESS
+        window.handleLogIn = async function(event) {
+            event.preventDefault();
+            const email = document.getElementById('logInEmail').value.trim();
+            const password = document.getElementById('logInPassword').value.trim();
+
+            try {
+                if (auth && firebaseConfig.apiKey !== "") {
+                    // Firebase Production Action
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showToast("Welcome back!", true);
+                } else {
+                    // Sandbox authentication check (offline simulation)
+                    let foundUser = Object.values(localMockUsers).find(u => u.email === email);
+                    if (!foundUser) {
+                        // Quick auto-registration logic for easy developer testing offline
+                        foundUser = {
+                            uid: "mock_user_1",
+                            displayName: "Demo Athlete",
+                            username: "AthleteDemo",
+                            email: email,
+                            progress: {}
+                        };
+                        localMockUsers[foundUser.uid] = foundUser;
+                    }
+                    currentUser = foundUser;
+                    document.getElementById('userDisplayName').innerText = currentUser.displayName;
+                    document.getElementById('userDisplayHandle').innerText = `@${currentUser.username}`;
+                    
+                    // Load mocked offline progress
+                    completionState = currentUser.progress || {};
+                    renderExercises();
+                    updateCounter();
+                    
+                    showToast("Signed in successfully (Offline Mode)", true);
+                    navigateTo('mainDashboard');
+                }
+            } catch (error) {
+                showToast(error.message);
+            }
+        };
+
+        // LOG OUT PROCESS
+        window.handleLogOut = async function() {
+            try {
+                if (auth && firebaseConfig.apiKey !== "") {
+                    await signOut(auth);
+                } else {
+                    currentUser = null;
+                    navigateTo('welcomeScreen');
+                    showToast("Logged out.", true);
+                }
+            } catch (error) {
+                showToast(error.message);
+            }
+        };
+
+        // ============================================================================
+        // PROGRESS SYNC (SAVING & LOADING EXERCISE PROGRESS)
+        // ============================================================================
+        async function loadProgress(uid) {
+            try {
+                if (db) {
+                    const docSnap = await getDoc(doc(db, "artifacts", "workout-app", "users", uid, "progress"));
+                    if (docSnap.exists()) {
+                        completionState = docSnap.data().completionState || {};
+                    } else {
+                        completionState = {};
+                    }
+                }
+            } catch (err) {
+                console.error("Error reading collection database: ", err);
+            }
+            renderExercises();
+            updateCounter();
+        }
+
+        async function saveProgress() {
+            if (!currentUser) return;
+            
+            try {
+                if (db && firebaseConfig.apiKey !== "") {
+                    // Save to cloud (Rule 1 Strict Path)
+                    await setDoc(doc(db, "artifacts", "workout-app", "users", currentUser.uid, "progress"), {
+                        completionState: completionState,
+                        updatedAt: new Date().toISOString()
+                    });
+                } else if (currentUser.uid) {
+                    // Save mock data locally
+                    localMockUsers[currentUser.uid].progress = completionState;
+                }
+            } catch (err) {
+                console.error("Failed to save progress offline/online: ", err);
+            }
+        }
+
+        // ============================================================================
+        // LIST GENERATION & EXERCISE RENDERERS
+        // ============================================================================
+        window.toggleExerciseCompleted = function(id) {
+            completionState[id] = !completionState[id];
+            
+            // Highlight complete state on UI
+            const cardEl = document.getElementById(`card-${id}`);
+            const checkIcon = document.getElementById(`overall-check-${id}`);
+            
+            if (completionState[id]) {
+                cardEl.classList.add('border-2', 'border-blue-500', 'bg-blue-50/10');
+                checkIcon.innerHTML = `
+                    <svg class="w-5 h-5 text-blue-500 fill-current" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l5-5z" clip-rule="evenodd" />
+                    </svg>
+                `;
+            } else {
+                cardEl.classList.remove('border-2', 'border-blue-500', 'bg-blue-50/10');
+                checkIcon.innerHTML = `
+                    <div class="w-5 h-5 rounded-full border-2 border-gray-300 hover:border-blue-500 transition-colors"></div>
+                `;
+            }
+
+            updateCounter();
+            saveProgress();
+        };
+
+        function updateCounter() {
+            const completedCount = Object.values(completionState).filter(val => val).length;
+            document.getElementById('completedCounter').innerText = completedCount;
+        }
+
+        function generateChecklist(list, listName, exerciseId) {
+            return list.map((item, index) => {
+                const itemId = `${exerciseId}-${listName}-${index}`;
+                return `
+                    <div class="flex items-start gap-3 py-1 cursor-pointer select-none group" onclick="toggleCheckbox('${itemId}')">
+                        <div id="check-${itemId}" class="mt-0.5 w-[20px] h-[20px] flex-shrink-0 flex items-center justify-center rounded border border-[#D1D5DB] bg-white group-hover:border-[#3B82F6] transition-colors duration-150">
+                            <svg class="w-3.5 h-3.5 text-white stroke-current hidden" viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="2.5 6.5 4.5 8.5 9.5 3.5"></polyline>
+                            </svg>
+                        </div>
+                        <span class="text-sm text-[#6B7280] leading-snug group-hover:text-[#1A1F36] transition-colors">${item}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.toggleCheckbox = function(itemId) {
+            const checkbox = document.getElementById(`check-${itemId}`);
+            const checkMark = checkbox.querySelector('svg');
+            
+            if (checkMark.classList.contains('hidden')) {
+                checkbox.style.backgroundColor = '#3B82F6';
+                checkbox.style.borderColor = '#3B82F6';
+                checkMark.classList.remove('hidden');
+            } else {
+                checkbox.style.backgroundColor = '#FFFFFF';
+                checkbox.style.borderColor = '#D1D5DB';
+                checkMark.classList.add('hidden');
+            }
+        };
+
+        function renderExercises(filterText = '') {
+            const container = document.getElementById('exerciseContainer');
+            container.innerHTML = '';
+
+            const filtered = EXERCISES.filter(ex => {
+                const searchLower = filterText.toLowerCase();
+                const matchesName = ex.name.toLowerCase().includes(searchLower);
+                const matchesTargets = ex.targets.some(t => t.toLowerCase().includes(searchLower));
+                return matchesName || matchesTargets;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-12 text-center">
+                        <svg class="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-sm font-medium text-gray-500">No exercises found.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(ex => {
+                const isCompleted = completionState[ex.id] || false;
+                const card = document.createElement('div');
+                card.id = `card-${ex.id}`;
+                card.className = `bg-white rounded-2xl p-5 shadow-sm border ${isCompleted ? 'border-2 border-blue-500 bg-blue-50/10' : 'border-[#E5E7EB]'} transition-all duration-200 relative`;
+                
+                card.innerHTML = `
+                    <!-- Completion Toggle Button -->
+                    <button onclick="toggleExerciseCompleted('${ex.id}')" id="overall-check-${ex.id}" class="absolute top-5 right-5 focus:outline-none">
+                        ${isCompleted ? `
+                            <svg class="w-5 h-5 text-blue-500 fill-current" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l5-5z" clip-rule="evenodd" />
+                            </svg>
+                        ` : `
+                            <div class="w-5 h-5 rounded-full border-2 border-gray-300 hover:border-blue-500 transition-colors"></div>
+                        `}
+                    </button>
+
+                    <!-- Exercise Header -->
+                    <div class="pr-8 mb-3">
+                        <h2 class="text-xl font-bold text-[#1A1F36]">${ex.name}</h2>
+                        <div class="text-blue-500 text-sm font-bold mt-0.5">${ex.sets} x ${ex.reps} sets/reps</div>
+                    </div>
+
+                    <!-- Level & Type Tags -->
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="bg-[#EFF6FF] text-[#1E40AF] text-[11px] font-bold px-2.5 py-1 rounded-full">${ex.type}</span>
+                        <span class="bg-[#ECFDF5] text-[#065F46] text-[11px] font-bold px-2.5 py-1 rounded-full">${ex.level}</span>
+                    </div>
+
+                    <!-- Benefits Section -->
+                    <div class="mb-4">
+                        <span class="text-xs font-bold text-[#6B7280] tracking-wider uppercase block mb-1">Benefits</span>
+                        <p class="text-sm text-[#1A1F36] leading-relaxed">${ex.benefits}</p>
+                    </div>
+
+                    <!-- Target Muscles Row -->
+                    <div class="flex items-center gap-3 bg-[#F3F4F6] p-2.5 rounded-xl mb-5">
+                        <div class="w-9 h-9 bg-[#E0E7FF] rounded-lg flex items-center justify-center flex-shrink-0 text-[#3B82F6]">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="5" r="2" />
+                                <path d="M12 7v7M9 9h6M10 22v-8h4v8" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                        <div class="text-xs">
+                            <span class="text-gray-400 block font-semibold uppercase tracking-wider">Targets</span>
+                            <span class="text-[#1A1F36] font-semibold">${ex.targets.join(', ')}</span>
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <hr class="border-[#EFF2F6] mb-4">
+
+                    <!-- Checklist Sections -->
+                    <div class="space-y-4">
+                        <!-- Key Details Checklist -->
+                        <div>
+                            <span class="text-xs font-bold text-[#1A1F36] tracking-wider uppercase block mb-2">Key Details</span>
+                            <div class="space-y-1.5">${generateChecklist(ex.key_details, 'key', ex.id)}</div>
+                        </div>
+
+                        <!-- Breathing Checklist -->
+                        <div>
+                            <span class="text-xs font-bold text-[#1A1F36] tracking-wider uppercase block mb-2">Breathing</span>
+                            <div class="space-y-1.5">${generateChecklist(ex.breathing, 'breath', ex.id)}</div>
+                        </div>
+
+                        <!-- Setup & Adjustments -->
+                        <div>
+                            <span class="text-xs font-bold text-[#1A1F36] tracking-wider uppercase block mb-2">Setup & Adjustments</span>
+                            <div class="space-y-1.5">${generateChecklist(ex.setup, 'setup', ex.id)}</div>
+                        </div>
+
+                        <!-- Coaching Tips -->
+                        <div>
+                            <span class="text-xs font-bold text-[#1A1F36] tracking-wider uppercase block mb-1.5">Coaching Tips</span>
+                            <ul class="list-disc pl-4 space-y-1 text-sm text-[#1A1F36]">
+                                ${ex.coaching_tips.map(tip => `<li>${tip}</li>`).join('')}
+                            </ul>
+                        </div>
+
+                        <!-- Common Mistakes (Red styled alert area) -->
+                        <div class="bg-red-50/50 rounded-xl p-3 border border-red-100">
+                            <span class="text-xs font-bold text-[#EF4444] tracking-wider uppercase block mb-1.5">Common Mistakes</span>
+                            <ul class="space-y-1 text-sm text-[#EF4444]">
+                                ${ex.common_mistakes.map(mistake => `<li class="flex items-start gap-1.5"><span>✗</span> <span>${mistake}</span></li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Handle Search Input Event
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            renderExercises(e.target.value);
+        });
+
+        // Initialize display list
+        renderExercises();
+    </script>
+</body>
+</html>
